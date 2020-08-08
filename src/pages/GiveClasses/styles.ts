@@ -32,7 +32,7 @@ export const Description = styled.Text`
 `;
 
 export const OkButton = styled(RectButton)`
-  margin-vertical: 40px;
+  margin: 40px 0;
   background-color: #04d361;
   height: 58px;
   align-items: center;
