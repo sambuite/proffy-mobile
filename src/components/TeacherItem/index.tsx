@@ -1,5 +1,6 @@
-import React from 'react';
-import { Image } from 'react-native';
+import React, { useState } from 'react';
+import { Image, Linking } from 'react-native';
+import AsyncStorage from '@react-native-community/async-storage';
 
 import heartOutlineIcon from '../../assets/images/icons/heart-outline.png';
 import unfavoriteIcon from '../../assets/images/icons/unfavorite.png';
@@ -22,40 +23,87 @@ import {
   ContactButtonText,
 } from './styles';
 
-const TeacherItem = () => {
+import api from '../../services/api';
+
+export interface Teacher {
+  id: number;
+  avatar: string;
+  bio: string;
+  cost: number;
+  name: string;
+  subject: string;
+  whatsapp: string;
+}
+
+interface TeacherItemProps {
+  teacher: Teacher;
+  favorited: boolean;
+}
+
+const TeacherItem: React.FC<TeacherItemProps> = ({ teacher, favorited }) => {
+  const [isFavorited, setFavorited] = useState(favorited);
+
+  const handleLinkToWhatsapp = () => {
+    api.post('connections', {
+      user_id: teacher.id,
+    });
+    Linking.openURL(`whatsapp://send?phone=${teacher.whatsapp}`);
+  };
+
+  const handleToggleFavorite = async () => {
+    const favorites = await AsyncStorage.getItem('favorites');
+
+    let favoritesArray = [];
+
+    if (favorites) {
+      favoritesArray = JSON.parse(favorites);
+    }
+
+    if (isFavorited) {
+      const favoriteIndex = favoritesArray.findIndex(
+        (teacherItem: Teacher) => teacherItem.id === teacher.id
+      );
+
+      favoritesArray.splice(favoriteIndex, 1);
+
+      setFavorited(false);
+    } else {
+      favoritesArray.push(teacher);
+
+      setFavorited(true);
+    }
+
+    await AsyncStorage.setItem('favorites', JSON.stringify(favoritesArray));
+  };
+
   return (
     <Container>
       <Profile>
-        <PImage source={{ uri: 'https://github.com/sambuite.png' }} />
+        <PImage source={{ uri: teacher.avatar }} />
         <Info>
-          <Name>Murilo Sambuite</Name>
-          <Subject>Matamática</Subject>
+          <Name>{teacher.name}</Name>
+          <Subject>{teacher.subject}</Subject>
         </Info>
       </Profile>
 
-      <Bio>
-        Lorem ipsum, dolor sit amet consectetur adipisicing elit.
-        {'\n'}
-        {'\n'}
-        Beatae illum, ea ad optio corporis iste, est repellat error earum
-        similique mollitia magni, ipsum neque aliquam. Blanditiis a dolores ea
-        voluptatem.
-      </Bio>
+      <Bio>{teacher.bio}</Bio>
 
       <Footer>
         <Price>
           Preço/Hora {'   '}
-          <PriceValue>R$ 20,00</PriceValue>
+          <PriceValue>R$ {teacher.cost}</PriceValue>
         </Price>
 
         <ButtonsContainer>
-          <FavoriteButton favorite={false}>
-            <Image source={!false ? heartOutlineIcon : unfavoriteIcon} />
+          <FavoriteButton onPress={handleToggleFavorite} favorite={isFavorited}>
+            <Image source={!isFavorited ? heartOutlineIcon : unfavoriteIcon} />
           </FavoriteButton>
 
           <ContactButton>
             <Image source={whatsappIcon} />
-            <ContactButtonText>Entrar em contato</ContactButtonText>
+            <ContactButtonText onPress={handleLinkToWhatsapp}>
+              Entrar em contato
+            </ContactButtonText>
           </ContactButton>
         </ButtonsContainer>
       </Footer>
